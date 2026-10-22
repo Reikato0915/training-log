@@ -29,6 +29,7 @@ export function renderSettings(ctx) {
       repo: normalizeRepo(fd.get('repo')),
       path: String(fd.get('path')).trim() || 'training.json',
       ...(token ? { token } : {}),
+      tokenExpires: String(fd.get('tokenExpires') ?? ''),
     };
     if (!isConfigured(next)) { toast('リポジトリ名（owner/name）とトークンを入力してください'); return; }
     ctx.setSettings(next);
@@ -40,6 +41,8 @@ export function renderSettings(ctx) {
   h('label', { class: 'field' }, 'ファイル', h('input', { name: 'path', value: settings.path, autocapitalize: 'off' })),
   h('label', { class: 'field' }, `トークン${settings.token ? '（設定済み・変更時のみ入力）' : ''}`,
     h('input', { name: 'token', type: 'password', autocomplete: 'off', placeholder: 'github_pat_…' })),
+  h('label', { class: 'field' }, 'トークンの有効期限（30日前から残り日数をお知らせ）',
+    h('input', { name: 'tokenExpires', type: 'date', value: settings.tokenExpires ?? '' })),
   h('div', { class: 'row' },
     h('button', { type: 'submit', class: 'primary' }, '保存して同期'),
     settings.token ? h('button', {

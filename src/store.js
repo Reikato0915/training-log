@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   path: 'training.json',
   token: '',
   weightStep: 2.5,
+  tokenExpires: '',
 });
 
 function readJSON(key, fallback) {

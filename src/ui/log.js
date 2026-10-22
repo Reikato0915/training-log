@@ -6,9 +6,10 @@ import { exerciseTotals, lastPerformance, nextSplit, addDays } from '../aggregat
 import {
   newSession, sessionForDate, upsertSession, deleteSession, activeCustom, addCustomExercise, gymOptions, addGym,
 } from '../store.js';
-import { h, fmtKg, fmtDate, toast } from './dom.js';
+import { h, fmtKg, fmtDate, toast, todayISO } from './dom.js';
 import { weightAt } from '../bodyweight.js';
 import { isConfigured } from '../sync.js';
+import { expiryMessage } from '../token-expiry.js';
 import { renderCalendar } from './calendar.js';
 
 const CHIP_COUNT = 8;
@@ -94,6 +95,10 @@ export function renderLog(ctx) {
 
 function renderSyncBanner(ctx) {
   const { settings, sync, syncError } = ctx.state;
+  const expiry = settings.token ? expiryMessage(settings.tokenExpires, todayISO()) : null;
+  if (expiry && sync !== 'error') {
+    return h('button', { class: `sync-banner ${expiry.level}`, onclick: () => ctx.setView('settings') }, expiry.text, h('b', {}, ' 設定を開く ›'));
+  }
   if (isConfigured(settings) && sync !== 'error') return null;
   const msg = isConfigured(settings)
     ? `同期エラー：${syncError}`

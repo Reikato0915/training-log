@@ -101,6 +101,7 @@ const ctx = {
       renderStatus();
     } catch (err) {
       state.sync = navigator.onLine ? 'error' : 'offline';
+      if (/トークンが無効/.test(err.message)) err.message += '（期限切れの可能性。新しいトークンを設定してください）';
       state.syncError = err.message;
       renderStatus();
     }
