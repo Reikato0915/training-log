@@ -1,8 +1,11 @@
 // 記録画面：日付・分割・種目・セット入力
 import {
   SPLITS, exercisesForSplit, findExercise, allExercises, MUSCLES, makeCustomExercise, unitOf, toDisplayWeight, fromDisplayWeight, UNITS,
+  DEFAULT_MENUS,
 } from '../catalog.js';
-import { exerciseTotals, lastPerformance, nextSplit, addDays } from '../aggregate.js';
+import {
+  exerciseTotals, lastPerformance, nextSplit, addDays, lastSessionOfSplit, copyExercises,
+} from '../aggregate.js';
 import {
   newSession, sessionForDate, upsertSession, deleteSession, activeCustom, addCustomExercise, gymOptions, addGym,
 } from '../store.js';
@@ -17,7 +20,18 @@ const NEW_EXERCISE = '__new__';
 const NEW_GYM = '__new_gym__';
 
 const roundStep = (v) => Math.round(v * 100) / 100;
-const fmtSet = (s, unit) => `${toDisplayWeight(s.w, unit) ?? '自重'}×${s.reps ?? '?'}${s.extra ? `+${s.extra}` : ''}`;
+const fmtSet = (s, unit) => `${toDisplayWeight(s.w, unit) ?? '自重'}×${s.reps ?? '?'}${s.repsR != null ? `/${s.repsR}` : ''}${s.extra ? `+${s.extra}` : ''}`;
+
+/** 候補ボタン：分割ごとの定番メニュー＋自分で登録した種目。その他は使用頻度順 */
+function menuExercises(data, split) {
+  const custom = activeCustom(data);
+  const menu = DEFAULT_MENUS[split];
+  if (menu) {
+    const category = split.startsWith('legs') ? 'legs' : split;
+    return [...menu.map((id) => findExercise(id, custom)).filter(Boolean), ...custom.filter((e) => e.split === category)];
+  }
+  return frequentExercises(data, split);
+}
 
 function frequentExercises(data, split) {
   const category = (sp) => (sp.startsWith('legs') ? 'legs' : sp);
@@ -49,9 +63,11 @@ export function renderLog(ctx) {
   const addExercise = (exId) => {
     const s = current();
     const prev = lastPerformance(ctx.state.data.sessions, exId, date);
+    const def = findExercise(exId, activeCustom(ctx.state.data));
     const first = prev?.sets.find((x) => x.reps !== 0) ?? { w: null, reps: null };
-    const unit = prev?.unit ?? unitOf(findExercise(exId, activeCustom(ctx.state.data)));
-    save({ ...s, exercises: [...s.exercises, { exId, unit, memo: '', sets: [{ w: first.w, reps: first.reps }] }] });
+    const unit = prev?.unit ?? unitOf(def);
+    const set = def?.sided ? { w: first.w, reps: first.reps, repsR: first.repsR ?? first.reps } : { w: first.w, reps: first.reps };
+    save({ ...s, exercises: [...s.exercises, { exId, unit, memo: '', sets: [set] }] });
   };
 
   const header = h('section', { class: 'day-head' },
@@ -61,6 +77,7 @@ export function renderLog(ctx) {
         h('span', { class: 'date-big' }, fmtDate(date)),
         h('input', { type: 'date', value: date, class: 'date-input', 'aria-label': '日付', onchange: (e) => e.target.value && ctx.setDate(e.target.value) })),
       h('button', { class: 'icon-btn', 'aria-label': '翌日', onclick: () => ctx.setDate(addDays(date, 1)) }, '›')),
+    renderCalendar(ctx),
     h('div', { class: 'split-row', role: 'radiogroup', 'aria-label': '分割' },
       SPLITS.map((sp) => h('button', {
         class: `chip split-${sp.id}${session.split === sp.id ? ' on' : ''}`,
@@ -81,6 +98,16 @@ export function renderLog(ctx) {
     ? h('button', { class: 'add-exercise', onclick: () => ctx.setPickerOpen(true) }, '＋ 種目を追加')
     : renderPicker(ctx, session.split, custom, addExercise);
 
+  // 記録が空の日は、同じ分割の前回メニューをワンタッチで複製できる
+  const lastSame = session.exercises.length ? null : lastSessionOfSplit(ctx.state.data.sessions, session.split, date);
+  const copyBtn = lastSame
+    ? h('button', {
+      class: `copy-last split-${session.split}`,
+      onclick: () => save({ ...current(), exercises: copyExercises(lastSame) }),
+    }, h('b', {}, `前回の${SPLITS.find((x) => x.id === session.split)?.name}をコピー`),
+    h('span', {}, `${fmtDate(lastSame.date)}・${lastSame.exercises.length}種目（重量・レップも複製）`))
+    : null;
+
   const footer = existing
     ? h('button', {
       class: 'text-btn danger', onclick: () => {
@@ -89,8 +116,7 @@ export function renderLog(ctx) {
     }, 'この日の記録を削除')
     : null;
 
-  return h('div', { class: 'view-log' }, renderSyncBanner(ctx), header, h('div', { class: 'cards' }, cards), picker,
-    renderCalendar(ctx), footer);
+  return h('div', { class: 'view-log' }, renderSyncBanner(ctx), header, copyBtn, h('div', { class: 'cards' }, cards), picker, footer);
 }
 
 function renderSyncBanner(ctx) {
@@ -175,12 +201,20 @@ function renderCard(ctx, entry, idx, { custom, date, updateEntry, save, current 
       h('button', { class: 'step', tabIndex: -1, 'aria-label': `${label}を増やす`, onclick: bump(delta) }, '+'));
   };
 
-  const rows = entry.sets.map((s, si) => h('div', { class: `set-row${s.reps === 0 ? ' failed' : ''}` },
+  // 左右別種目は「重量｜左｜右」で1セット
+  const sided = Boolean(def?.sided) || entry.sets.some((x) => x.repsR != null);
+  const repCells = (s, si) => (sided
+    ? [stepper(si, 'reps', s.reps, 1, 'numeric', '左レップ'), stepper(si, 'repsR', s.repsR, 1, 'numeric', '右レップ')]
+    : [h('span', { class: 'times' }, '×'), stepper(si, 'reps', s.reps, 1, 'numeric', 'レップ')]);
+  const sidedHead = sided
+    ? h('div', { class: 'set-row sided head', 'aria-hidden': 'true' }, h('span'), h('span', {}, unit), h('span', {}, '左'), h('span', {}, '右'), h('span'))
+    : null;
+
+  const rows = entry.sets.map((s, si) => h('div', { class: `set-row${sided ? ' sided' : ''}${s.reps === 0 ? ' failed' : ''}` },
     h('span', { class: 'set-no' }, si + 1),
     stepper(si, 'w', s.w, step, 'decimal', `重量(${unit})`),
-    h('span', { class: 'times' }, '×'),
-    stepper(si, 'reps', s.reps, 1, 'numeric', 'レップ'),
-    s.extra ? h('span', { class: 'extra' }, `+${s.extra}`) : null,
+    repCells(s, si),
+    sided ? null : (s.extra ? h('span', { class: 'extra' }, `+${s.extra}`) : h('span')),
     h('button', {
       class: 'icon-btn small', 'aria-label': `${si + 1}セット目を削除`,
       onclick: () => updateEntry(idx, (e) => ({ ...e, sets: e.sets.filter((_, j) => j !== si) })),
@@ -188,7 +222,8 @@ function renderCard(ctx, entry, idx, { custom, date, updateEntry, save, current 
 
   const addSet = () => updateEntry(idx, (e) => {
     const last = e.sets.at(-1) ?? prev?.sets[0] ?? { w: null, reps: null };
-    return { ...e, sets: [...e.sets, { w: last.w, reps: last.reps }] };
+    const next = { w: last.w, reps: last.reps };
+    return { ...e, sets: [...e.sets, sided ? { ...next, repsR: last.repsR ?? last.reps } : next] };
   });
 
   const muscles = def ? def.primary.map((m) => MUSCLES.find((x) => x.id === m)?.name).join('・') : '不明な種目';
@@ -218,7 +253,7 @@ function renderCard(ctx, entry, idx, { custom, date, updateEntry, save, current 
         },
       }, '×')),
     prev ? h('p', { class: 'prev' }, `前回 ${fmtDate(prev.date)}：${prev.sets.map((x) => fmtSet(x, unit)).join(' / ')} ${unit}`) : null,
-    h('div', { class: 'sets' }, rows),
+    h('div', { class: 'sets' }, sidedHead, rows),
     h('div', { class: 'card-foot' },
       h('button', { class: 'add-set', onclick: addSet }, '＋ セット'),
       h('input', {
@@ -228,7 +263,7 @@ function renderCard(ctx, entry, idx, { custom, date, updateEntry, save, current 
 }
 
 function renderPicker(ctx, split, custom, addExercise) {
-  const chips = frequentExercises(ctx.state.data, split).map((e) =>
+  const chips = menuExercises(ctx.state.data, split).map((e) =>
     h('button', { class: `chip ex-chip split-${e.split}`, onclick: () => addExercise(e.id) }, e.name));
 
   const groups = ['push', 'pull', 'legs'].map((key) => h('optgroup', { label: key.toUpperCase() },

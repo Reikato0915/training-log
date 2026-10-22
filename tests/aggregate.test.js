@@ -38,6 +38,15 @@ describe('exerciseTotals', () => {
     expect(t.volume).toBe(700);
   });
 
+  it('counts a left/right pair as one set and sums both sides', () => {
+    const t = exerciseTotals({ exId: 'bulgarian', sets: [{ w: 20, reps: 10, repsR: 9 }, { w: 20, reps: 0, repsR: 0 }] });
+    expect(t).toEqual({ sets: 1, volume: 380 });
+  });
+
+  it('uses the stronger side for e1RM', () => {
+    expect(bestE1RM([{ w: 30, reps: 6, repsR: 9 }])).toBeCloseTo(39, 5);
+  });
+
   it('adds bodyweight for bodyweight exercises', () => {
     const t = exerciseTotals({ exId: 'chinning', sets: [{ w: 10, reps: 5 }] }, [], 75);
     expect(t.volume).toBe(425);
@@ -126,5 +135,26 @@ describe('nextSplit', () => {
   it('skips "other" sessions when deciding', () => {
     const s = (date, split) => ({ id: date, date, split, exercises: [] });
     expect(nextSplit([s('2026-10-01', 'pull'), s('2026-10-02', 'other')])).toBe('legs1');
+  });
+});
+
+describe('copy last session of split', async () => {
+  const { lastSessionOfSplit, copyExercises } = await import('../src/aggregate.js');
+  const mk = (id, date, split, n = 1, extra = {}) => ({
+    id, date, split, exercises: Array.from({ length: n }, () => ({ exId: 'bench', unit: 'lb', memo: 'm', sets: [{ w: 100, reps: 8 }] })), ...extra,
+  });
+
+  it('finds the latest same-split session before the date', () => {
+    const list = [mk('a', '2026-10-01', 'push'), mk('b', '2026-10-08', 'push'), mk('c', '2026-10-09', 'pull'),
+      mk('d', '2026-10-10', 'push', 0), mk('e', '2026-10-11', 'push', 1, { deleted: true })];
+    expect(lastSessionOfSplit(list, 'push', '2026-10-22').id).toBe('b');
+    expect(lastSessionOfSplit(list, 'legs1', '2026-10-22')).toBeNull();
+  });
+
+  it('copies sets and unit without memo or shared references', () => {
+    const src = mk('a', '2026-10-01', 'push');
+    const copy = copyExercises(src);
+    expect(copy).toEqual([{ exId: 'bench', unit: 'lb', memo: '', sets: [{ w: 100, reps: 8 }] }]);
+    expect(copy[0].sets[0]).not.toBe(src.exercises[0].sets[0]);
   });
 });

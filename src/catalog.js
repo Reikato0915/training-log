@@ -48,20 +48,23 @@ export const BUILTIN_EXERCISES = [
   ex('shoulder_press', 'ショルダープレス', 'push', ['delt_front'], ['delt_side', 'triceps'], ['SP']),
   ex('side_raise', 'サイドレイズ', 'push', ['delt_side'], [], ['SR']),
   ex('lateral_raise', 'ラテラルレイズ', 'push', ['delt_side'], [], ['LR']),
-  ex('cable_side_raise', 'ケーブルサイドレイズ', 'push', ['delt_side'], [], ['CSR']),
+  ex('cable_side_raise', 'ケーブルサイドレイズ', 'push', ['delt_side'], [], ['CSR'], { sided: true }),
   ex('front_raise', 'フロントレイズ', 'push', ['delt_front'], [], ['FR']),
   ex('upright_row', 'アップライトロウ', 'push', ['delt_side'], ['trap_upper'], ['URR']),
   ex('skull_crusher', 'スカルクラッシャー', 'push', ['triceps'], [], ['SC']),
   ex('pushdown', 'プレスダウン', 'push', ['triceps'], [], ['PD']),
+  ex('pushdown_ez', 'プレスダウン：EZ', 'push', ['triceps'], [], ['PD EZ', 'EZプレスダウン']),
+  ex('pushdown_rope', 'プレスダウン：ロープ', 'push', ['triceps'], [], ['ロープ', 'ロープPD']),
   ex('triceps_ext', 'トライセプスエクステンション', 'push', ['triceps'], [], ['TE']),
   // pull
-  ex('chinning', 'チニング', 'pull', ['lat_upper'], ['lat_lower', 'biceps'], ['chinning', 'チンニング', '懸垂'], { bodyweight: true }),
+  ex('chinning', 'チンニング', 'pull', ['lat_upper'], ['lat_lower', 'biceps'], ['chinning', 'チニング', '懸垂'], { bodyweight: true }),
   ex('lat_pulldown', 'ラットプルダウン', 'pull', ['lat_upper'], ['lat_lower', 'biceps'],
     ['ラット', 'Lat', 'LPD', 'レバレッジラット', 'レバレッジ', '片側ラット']),
   ex('wide_pulldown', 'ワイドプルダウン', 'pull', ['lat_upper'], ['lat_lower', 'biceps'], ['ハンマー　ワイドプルダウン', 'ハンマー ワイドプルダウン']),
   ex('tbar_row', 'Tバーロウ', 'pull', ['lat_lower'], ['lat_upper', 'delt_rear', 'biceps'], ['Tバー', 'T bar', 'Tbar']),
   ex('cable_row', 'ケーブルロー', 'pull', ['lat_lower'], ['lat_upper', 'biceps'], ['シーテッドロー']),
   ex('pulley_row', 'プーリーロウ', 'pull', ['lat_lower'], ['lat_upper', 'biceps'], ['プリーロウ', 'プリー', 'プーリー'], { unit: 'lb' }),
+  ex('hammer_row', 'ハンマーロウ', 'pull', ['lat_lower'], ['lat_upper', 'biceps'], ['ハンマーストレングスロー'], { sided: true }),
   ex('mid_row', 'ミッドロー', 'pull', ['lat_lower'], ['lat_upper', 'biceps']),
   ex('one_hand_row', 'ワンハンドロー', 'pull', ['lat_lower'], ['lat_upper', 'biceps']),
   ex('ih_row', 'IH式ロー', 'pull', ['lat_lower'], ['lat_upper', 'biceps']),
@@ -69,18 +72,19 @@ export const BUILTIN_EXERCISES = [
   ex('face_pull', 'フェイスプル', 'pull', ['delt_rear'], ['lat_lower'], ['FP']),
   ex('rear_delt', 'リアデルト', 'pull', ['delt_rear'], [], ['リアデルトフライ', 'RD']),
   ex('arm_curl', 'アームカール', 'pull', ['biceps'], ['forearm'], ['AC']),
-  ex('incline_curl', 'インクラインダンベルカール', 'pull', ['biceps'], [], ['IAC']),
+  ex('incline_curl', 'インクラインアームカール', 'pull', ['biceps'], [], ['IAC', 'インクラインダンベルカール']),
+  ex('spider_curl', 'スパイダーカール', 'pull', ['biceps'], []),
   ex('hammer_curl', 'ハンマーカール', 'pull', ['biceps'], ['forearm']),
   ex('deadlift', 'デッドリフト', 'pull', ['erector'], ['glute_max', 'hams', 'trap_upper'], ['DL']),
   // legs
   ex('squat', 'スクワット', 'legs', ['quads'], ['glute_max', 'adductor', 'erector'], ['SQ']),
   ex('belt_squat', 'ベルトスクワット', 'legs', ['quads'], ['glute_max'], ['Belt', 'BSQ']),
   ex('hack_squat', 'ハックスクワット', 'legs', ['quads'], ['glute_max'], ['HS']),
-  ex('bulgarian', 'ブルガリアンスクワット', 'legs', ['quads'], ['glute_max', 'adductor'], ['BS']),
+  ex('bulgarian', 'ブルガリアンスクワット', 'legs', ['quads'], ['glute_max', 'adductor'], ['BS'], { sided: true }),
   ex('leg_press', 'レッグプレス', 'legs', ['quads'], ['glute_max'], ['LP', '45LP', '45 LP']),
   ex('leg_ext', 'レッグエクステンション', 'legs', ['quads'], [], ['LE']),
   ex('ih_leg_ext', 'IH式レッグエクステンション', 'legs', ['quads'], [], ['IHLE', 'IH LE', 'IH式LE']),
-  ex('lying_leg_curl', 'ライイングレッグカール', 'legs', ['hams'], [], ['PLC']),
+  ex('lying_leg_curl', 'プローンレッグカール', 'legs', ['hams'], [], ['PLC', 'ライイングレッグカール']),
   ex('seated_leg_curl', 'シーテッドレッグカール', 'legs', ['hams'], [], ['LC']),
   ex('rdl', 'ルーマニアンデッドリフト', 'legs', ['hams'], ['glute_max', 'erector'], ['RDL']),
   ex('hip_thrust', 'ヒップスラスト', 'legs', ['glute_max'], ['hams'], ['HT', 'Hip thrust']),
@@ -100,6 +104,14 @@ export const toDisplayWeight = (kg, unit) =>
   (kg == null || unit !== 'lb' ? kg : Math.round((kg / LB_TO_KG) * 10) / 10);
 export const fromDisplayWeight = (v, unit) =>
   (v == null || unit !== 'lb' ? v : Math.round(v * LB_TO_KG * 1000) / 1000);
+
+// 分割ごとの定番メニュー（記録画面の候補ボタンの並び）
+export const DEFAULT_MENUS = Object.freeze({
+  push: ['dips', 'cable_fly', 'shoulder_press', 'side_raise', 'lateral_raise', 'cable_side_raise', 'pushdown_ez', 'pushdown_rope'],
+  pull: ['lat_pulldown', 'tbar_row', 'chinning', 'hammer_row', 'pulley_row', 'face_pull', 'rear_delt', 'incline_curl', 'spider_curl'],
+  legs1: ['leg_ext', 'hack_squat', 'calf_raise', 'lying_leg_curl', 'adduction', 'abduction', 'dragon_flag'],
+  legs2: ['lying_leg_curl', 'bulgarian', 'leg_ext', 'calf_raise', 'adduction', 'abduction', 'dragon_flag'],
+});
 
 export const muscleName = (id) => MUSCLES.find((m) => m.id === id)?.name ?? id;
 

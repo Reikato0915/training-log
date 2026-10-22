@@ -20,12 +20,16 @@ export const addDays = (iso, n) => toISO(toUTC(iso) + n * DAY_MS);
 export const recentWeeks = (lastWeek, n) =>
   Array.from({ length: n }, (_, i) => addDays(lastWeek, (i - n + 1) * 7));
 
-const totalReps = (set) => (set.reps ?? 0) + (set.extra ?? 0);
-const isCountedSet = (set) => set.reps !== 0;
+// 左右別種目は reps=左, repsR=右。左右1組で1セット、負荷量は左右の合計レップで計算
+const totalReps = (set) => (set.reps ?? 0) + (set.repsR ?? 0) + (set.extra ?? 0);
+const isCountedSet = (set) => !(set.reps === 0 && (set.repsR ?? 0) === 0);
+const repsKnown = (set) => set.reps != null || set.repsR != null;
+// 推定1RMは左右のうち多い方のレップで計算
+const e1rmReps = (set) => Math.max(set.reps ?? 0, set.repsR ?? 0) + (set.extra ?? 0);
 
 function setLoad(set, bodyweight, isBodyweight) {
   const w = (set.w ?? 0) + (isBodyweight ? bodyweight : 0);
-  return set.reps == null ? 0 : w * totalReps(set);
+  return repsKnown(set) ? w * totalReps(set) : 0;
 }
 
 /** 種目1つ分の合計セット数と総負荷量（kg×rep） */
@@ -69,8 +73,8 @@ export const weekDelta = (current, previous) => (previous > 0 ? (current - previ
 /** Epley式 推定1RM。1〜12repのセットのみ対象 */
 export function bestE1RM(sets) {
   const values = sets
-    .filter((s) => s.w > 0 && s.reps >= 1 && totalReps(s) <= E1RM_MAX_REPS)
-    .map((s) => s.w * (1 + totalReps(s) / 30));
+    .filter((s) => s.w > 0 && e1rmReps(s) >= 1 && e1rmReps(s) <= E1RM_MAX_REPS)
+    .map((s) => s.w * (1 + e1rmReps(s) / 30));
   return values.length ? Math.max(...values) : null;
 }
 
@@ -110,3 +114,19 @@ export function weeklyE1RM(sessions, weeks) {
     return next;
   }, {});
 }
+
+/** 同じ分割で date より前の最新記録（種目があるもの） */
+export function lastSessionOfSplit(sessions, split, beforeDate) {
+  return [...sessions]
+    .filter((s) => !s.deleted && s.split === split && s.date < beforeDate && s.exercises.length)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .at(0) ?? null;
+}
+
+/** 前回記録の種目・セットを複製（メモは引き継がない） */
+export const copyExercises = (session) => session.exercises.map((e) => ({
+  exId: e.exId,
+  ...(e.unit ? { unit: e.unit } : {}),
+  memo: '',
+  sets: e.sets.map((s) => ({ ...s })),
+}));

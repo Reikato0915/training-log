@@ -55,3 +55,15 @@ describe('weight units', async () => {
     expect(unitOf(find('bench'))).toBe('kg');
   });
 });
+
+describe('default menus', async () => {
+  const { DEFAULT_MENUS, findExercise: find } = await import('../src/catalog.js');
+  it('only reference existing exercises', () => {
+    for (const ids of Object.values(DEFAULT_MENUS)) for (const id of ids) expect(find(id), id).toBeTruthy();
+  });
+
+  it('marks unilateral exercises', () => {
+    expect(['cable_side_raise', 'hammer_row', 'bulgarian'].every((id) => find(id).sided)).toBe(true);
+    expect(find('bench').sided).toBeUndefined();
+  });
+});
