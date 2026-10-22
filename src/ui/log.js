@@ -14,6 +14,8 @@ import { weightAt } from '../bodyweight.js';
 import { isConfigured } from '../sync.js';
 import { expiryMessage } from '../token-expiry.js';
 import { renderCalendar } from './calendar.js';
+import { renderTimeSlot, renderDayWeight } from './day-extras.js';
+import { withAutoSlot } from '../timeslot.js';
 
 const CHIP_COUNT = 8;
 const NEW_EXERCISE = '__new__';
@@ -53,7 +55,9 @@ export function renderLog(ctx) {
   const session = existing ?? newSession(date, nextSplit(data.sessions));
 
   // 変更を保存。structural=true なら再描画
-  const save = (next, structural = true) => ctx.commit(upsertSession(ctx.state.data, next), structural);
+  // 当日の初回入力時に時間帯を自動で付ける
+  const save = (next, structural = true) =>
+    ctx.commit(upsertSession(ctx.state.data, withAutoSlot(next, todayISO())), structural);
   const current = () => sessionForDate(ctx.state.data, date) ?? session;
   const updateEntry = (idx, fn, structural = true) => {
     const s = current();
@@ -84,7 +88,8 @@ export function renderLog(ctx) {
         role: 'radio', 'aria-checked': String(session.split === sp.id),
         onclick: () => save({ ...current(), split: sp.id }),
       }, sp.name))),
-    renderGymSelect(ctx, session, save, current),
+    h('div', { class: 'place-row' }, renderGymSelect(ctx, session, save, current), renderTimeSlot(session, save, current)),
+    renderDayWeight(ctx, date),
     h('textarea', {
       class: 'memo day-memo', rows: 1, placeholder: '日メモ（体調・合トレ等）', value: session.memo,
       oninput: (e) => save({ ...current(), memo: e.target.value }, false),

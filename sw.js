@@ -1,10 +1,10 @@
 // アプリ本体をキャッシュし、圏外でも起動できるようにする。
 // 更新時は CACHE の版を上げる。GitHub API はキャッシュしない。
-const CACHE = 'ironlog-v8';
+const CACHE = 'ironlog-v9';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
-  './src/app.js', './src/catalog.js', './src/aggregate.js', './src/store.js', './src/sync.js', './src/bodyweight.js', './src/token-expiry.js',
-  './src/ui/dom.js', './src/ui/log.js', './src/ui/week.js', './src/ui/settings.js', './src/ui/weight.js', './src/ui/calendar.js',
+  './src/app.js', './src/catalog.js', './src/aggregate.js', './src/store.js', './src/sync.js', './src/bodyweight.js', './src/token-expiry.js', './src/timeslot.js',
+  './src/ui/dom.js', './src/ui/log.js', './src/ui/week.js', './src/ui/settings.js', './src/ui/weight.js', './src/ui/calendar.js', './src/ui/day-extras.js',
   './icons/icon.svg', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
 
