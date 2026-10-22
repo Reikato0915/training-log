@@ -1,0 +1,17 @@
+{
+  "name": "training-log",
+  "version": "0.1.0",
+  "private": true,
+  "description": "筋トレ記録PWA：PPL×種目×セットを記録し、週ごと部位別のセット数・総負荷量を集計する",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "import-md": "node tools/import-md.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.11",
+    "vitest": "^4.1.11"
+  }
+}
