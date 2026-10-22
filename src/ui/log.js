@@ -271,8 +271,14 @@ function renderPicker(ctx, split, custom, addExercise) {
   const chips = menuExercises(ctx.state.data, split).map((e) =>
     h('button', { class: `chip ex-chip split-${e.split}`, onclick: () => addExercise(e.id) }, e.name));
 
-  const groups = ['push', 'pull', 'legs'].map((key) => h('optgroup', { label: key.toUpperCase() },
+  // その日の分割のカテゴリを先頭に。カテゴリ内は定番メニュー順→その他
+  const category = split.startsWith('legs') ? 'legs' : split;
+  const order = ['push', 'pull', 'legs'].sort((a, b) => (b === category) - (a === category));
+  const menu = DEFAULT_MENUS[split] ?? [];
+  const rank = (id) => (menu.includes(id) ? menu.indexOf(id) : menu.length);
+  const groups = order.map((key) => h('optgroup', { label: key === category ? `${key.toUpperCase()}（今日）` : key.toUpperCase() },
     allExercises(custom).filter((e) => e.split === key)
+      .sort((a, b) => (key === category ? rank(a.id) - rank(b.id) : 0))
       .map((e) => h('option', { value: e.id }, e.aliases.length ? `${e.name}（${e.aliases[0]}）` : e.name))));
 
   const select = h('select', {

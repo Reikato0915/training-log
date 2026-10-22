@@ -1,6 +1,6 @@
 // アプリ本体をキャッシュし、圏外でも起動できるようにする。
 // 更新時は CACHE の版を上げる。GitHub API はキャッシュしない。
-const CACHE = 'ironlog-v9';
+const CACHE = 'ironlog-v10';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/app.js', './src/catalog.js', './src/aggregate.js', './src/store.js', './src/sync.js', './src/bodyweight.js', './src/token-expiry.js', './src/timeslot.js',
