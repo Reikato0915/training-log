@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  upsertWeight, deleteWeight, activeWeights, weightAt, weeklyAverages, parseWeightCSV, importWeights, setHeight, bmi,
+  decodeCSV, upsertWeight, deleteWeight, activeWeights, weightAt, weeklyAverages, parseWeightCSV, importWeights, setHeight, bmi,
 } from '../src/bodyweight.js';
 import { emptyData, mergeData } from '../src/store.js';
 
@@ -49,6 +49,26 @@ describe('parseWeightCSV', () => {
     expect(rows).toHaveLength(1);
     expect(errors).toHaveLength(2);
     expect(errors[0]).toMatch(/^2行目/);
+  });
+});
+
+describe('ECLEAR export', () => {
+  const csv = '年月日,時刻,体重,体脂肪率,骨格筋率,BMI\n2021/01/17,18:50,90.55,28.4,35.9,31.3\n2021/01/18,21:00,89.5,0,0,0\n2021/01/18,6:28,89.05,27.3,37.1,29.1\n';
+
+  it('uses the 体重 column, skips time, keeps the earliest reading per day', () => {
+    const { rows, errors } = parseWeightCSV(csv);
+    expect(errors).toEqual([]);
+    expect(rows).toEqual([{ date: '2021-01-17', kg: 90.6 }, { date: '2021-01-18', kg: 89.1 }]);
+  });
+
+  it('reads headerless date,time,weight rows', () => {
+    expect(parseWeightCSV('2021/01/17,18:50,90.5').rows).toEqual([{ date: '2021-01-17', kg: 90.5 }]);
+  });
+
+  it('decodes Shift_JIS when not valid UTF-8', () => {
+    const sjis = new Uint8Array([0x91, 0xcc, 0x8f, 0x64]); // 「体重」
+    expect(decodeCSV(sjis)).toBe('体重');
+    expect(decodeCSV(new TextEncoder().encode('体重'))).toBe('体重');
   });
 });
 

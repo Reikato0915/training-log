@@ -1,6 +1,6 @@
 // 体重：日々の入力、日次＋週平均グラフ、CSV一括取り込み
 import {
-  activeWeights, upsertWeight, deleteWeight, weeklyAverages, parseWeightCSV, importWeights, bmi,
+  activeWeights, upsertWeight, deleteWeight, decodeCSV, weeklyAverages, parseWeightCSV, importWeights, bmi,
 } from '../bodyweight.js';
 import { weekStart, addDays } from '../aggregate.js';
 import { h, svg, fmtDate, todayISO, toast } from './dom.js';
@@ -69,7 +69,7 @@ export function renderWeight(ctx) {
     type: 'file', accept: '.csv,text/csv,text/plain', hidden: true, onchange: async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      const { rows, errors } = parseWeightCSV(await file.text());
+      const { rows, errors } = parseWeightCSV(decodeCSV(await file.arrayBuffer()));
       if (!rows.length) { toast(errors[0] ?? '読み込める行がありません'); return; }
       const msg = `${rows.length} 件を取り込みます（同じ日付は上書き）${errors.length ? `\n読めなかった行 ${errors.length} 件:\n${errors.slice(0, 5).join('\n')}` : ''}`;
       if (confirm(msg)) ctx.commit(importWeights(ctx.state.data, rows));
@@ -120,6 +120,6 @@ export function renderWeight(ctx) {
 
     h('section', { class: 'settings-block' },
       h('h2', {}, 'CSV から一括取り込み'),
-      h('p', { class: 'muted small' }, '1行に「日付,体重」（例：2026/10/22,77.4）。見出し行・タブ区切り・「kg」付きも可。同じ日付は上書きします。'),
+      h('p', { class: 'muted small' }, '「日付,体重」の形式か、体組成計アプリ（ECLEAR等）の書き出しをそのまま選べます。同じ日に複数あれば朝の値、既存の日付は上書きします。'),
       h('div', { class: 'row' }, h('button', { class: 'text-btn', onclick: () => fileInput.click() }, 'CSV ファイルを選ぶ'), fileInput)));
 }
