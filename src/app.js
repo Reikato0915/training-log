@@ -4,10 +4,11 @@ import { isConfigured, syncNow } from './sync.js';
 import { renderLog } from './ui/log.js';
 import { renderWeek } from './ui/week.js';
 import { renderSettings } from './ui/settings.js';
+import { renderWeight } from './ui/weight.js';
 import { todayISO, toast } from './ui/dom.js';
 
 const SYNC_DELAY_MS = 4000;
-const VIEWS = { log: renderLog, week: renderWeek, settings: renderSettings };
+const VIEWS = { log: renderLog, week: renderWeek, weight: renderWeight, settings: renderSettings };
 const SYNC_LABELS = {
   off: '未設定', idle: '同期済み', pending: '未送信あり', syncing: '同期中…', offline: 'オフライン（後で送信）', error: 'エラー',
 };
@@ -19,6 +20,9 @@ const state = {
   date: todayISO(),
   week: null,
   metric: 'sets',
+  calMonth: null,
+  pickerOpen: false,
+  weightRange: 12,
   sync: 'off',
   syncError: '',
   dirty: false,
@@ -59,9 +63,20 @@ const ctx = {
     scheduleSync();
     if (structural) render(); else renderStatus();
   },
-  setDate(date) { state.date = date; state.view = 'log'; render(); },
+  setDate(date) {
+    state.date = date;
+    state.view = 'log';
+    state.pickerOpen = false;
+    state.calMonth = date.slice(0, 7);
+    render();
+  },
+  setCalMonth(ym) { state.calMonth = ym; render(); },
+  setPickerOpen(open) { state.pickerOpen = open; render(); },
+  setView(view) { state.view = view; render(); window.scrollTo(0, 0); },
   setWeek(week) { state.week = week; render(); },
   setMetric(metric) { state.metric = metric; render(); },
+  setWeightRange(n) { state.weightRange = n; render(); },
+  setWeightDate(d) { state.weightDate = d; render(); },
   setSettings(settings) { state.settings = settings; saveSettings(settings); render(); },
   syncLabel() {
     const s = isConfigured(state.settings) ? state.sync : 'off';
@@ -108,6 +123,9 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('online', () => ctx.syncNow());
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // 新しい版が有効になったら一度だけ読み直して最新画面にする
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) location.reload(); });
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 

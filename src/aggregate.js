@@ -44,8 +44,9 @@ function addTo(stats, muscle, sets, volume) {
   return { ...stats, [muscle]: { sets: prev.sets + sets, volume: prev.volume + volume } };
 }
 
-/** { 週初日: { 部位id: { sets, volume } } } 主動筋1.0／協働筋0.5で按分 */
+/** { 週初日: { 部位id: { sets, volume } } } 主動筋1.0／協働筋0.5で按分。bodyweight は数値か (date) => 数値 */
 export function weeklyMuscleStats(sessions, custom = [], bodyweight = 0) {
+  const bwFor = typeof bodyweight === 'function' ? bodyweight : () => bodyweight;
   return sessions.reduce((weeks, s) => {
     const wk = weekStart(s.date);
     let stats = weeks[wk] ?? {};
@@ -53,7 +54,7 @@ export function weeklyMuscleStats(sessions, custom = [], bodyweight = 0) {
       for (const entry of s.exercises) {
         const def = findExercise(entry.exId, custom);
         if (!def) continue;
-        const { sets, volume } = exerciseTotals(entry, custom, bodyweight);
+        const { sets, volume } = exerciseTotals(entry, custom, bwFor(s.date));
         if (!sets) continue;
         for (const m of def.primary) stats = addTo(stats, m, sets, volume);
         for (const m of def.secondary) stats = addTo(stats, m, sets * SECONDARY_WEIGHT, volume * SECONDARY_WEIGHT);

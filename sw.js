@@ -1,10 +1,10 @@
 // アプリ本体をキャッシュし、圏外でも起動できるようにする。
 // 更新時は CACHE の版を上げる。GitHub API はキャッシュしない。
-const CACHE = 'ironlog-v4';
+const CACHE = 'ironlog-v5';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
-  './src/app.js', './src/catalog.js', './src/aggregate.js', './src/store.js', './src/sync.js',
-  './src/ui/dom.js', './src/ui/log.js', './src/ui/week.js', './src/ui/settings.js',
+  './src/app.js', './src/catalog.js', './src/aggregate.js', './src/store.js', './src/sync.js', './src/bodyweight.js',
+  './src/ui/dom.js', './src/ui/log.js', './src/ui/week.js', './src/ui/settings.js', './src/ui/weight.js', './src/ui/calendar.js',
   './icons/icon.svg', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
 
@@ -24,7 +24,7 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   e.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(e.request, { ignoreSearch: true });
-    const network = fetch(e.request).then((res) => {
+    const network = fetch(e.request, { cache: 'no-cache' }).then((res) => {
       if (res.ok) cache.put(e.request, res.clone());
       return res;
     }).catch(() => cached);

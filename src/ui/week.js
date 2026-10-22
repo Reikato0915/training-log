@@ -2,6 +2,7 @@
 import { MUSCLES, findExercise } from '../catalog.js';
 import { weeklyMuscleStats, weekStart, recentWeeks, weekDelta, weeklyE1RM, addDays } from '../aggregate.js';
 import { activeCustom } from '../store.js';
+import { weightAt } from '../bodyweight.js';
 import { h, svg, fmtKg, fmtSets, fmtDate, toast } from './dom.js';
 
 const TREND_WEEKS = 8;
@@ -43,7 +44,7 @@ export function renderWeek(ctx) {
   const custom = activeCustom(data);
   const week = ctx.state.week ?? weekStart(ctx.state.date);
   const weeks = recentWeeks(week, TREND_WEEKS);
-  const all = weeklyMuscleStats(data.sessions, custom, settings.bodyweight);
+  const all = weeklyMuscleStats(data.sessions, custom, (d) => weightAt(data, d, settings.bodyweight));
   const stats = all[week] ?? {};
   const prev = all[addDays(week, -7)] ?? {};
   const metric = ctx.state.metric ?? 'sets';

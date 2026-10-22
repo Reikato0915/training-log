@@ -3,7 +3,8 @@ import { MUSCLES, muscleName } from '../catalog.js';
 import {
   activeCustom, removeCustomExercise, validateData, mergeData, addGym, removeGym, DEFAULT_GYMS,
 } from '../store.js';
-import { isConfigured } from '../sync.js';
+import { isConfigured, normalizeRepo } from '../sync.js';
+import { setHeight } from '../bodyweight.js';
 import { h, toast } from './dom.js';
 
 export function renderSettings(ctx) {
@@ -25,7 +26,7 @@ export function renderSettings(ctx) {
     const token = String(fd.get('token') ?? '').trim();
     const next = {
       ...ctx.state.settings,
-      repo: String(fd.get('repo')).trim(),
+      repo: normalizeRepo(fd.get('repo')),
       path: String(fd.get('path')).trim() || 'training.json',
       ...(token ? { token } : {}),
     };
@@ -35,7 +36,7 @@ export function renderSettings(ctx) {
   } },
   h('h2', {}, 'GitHub 同期'),
   h('p', { class: 'muted' }, '記録を私的リポジトリの JSON に自動保存します。トークンはこの端末内だけに保存されます。'),
-  h('label', { class: 'field' }, 'リポジトリ（owner/name）', h('input', { name: 'repo', value: settings.repo, placeholder: 'Reikato0915/training-data', autocapitalize: 'off', autocomplete: 'off' })),
+  h('label', { class: 'field' }, 'データのリポジトリ（名前だけでも可）', h('input', { name: 'repo', value: settings.repo, placeholder: 'training-data', autocapitalize: 'off', autocomplete: 'off' })),
   h('label', { class: 'field' }, 'ファイル', h('input', { name: 'path', value: settings.path, autocapitalize: 'off' })),
   h('label', { class: 'field' }, `トークン${settings.token ? '（設定済み・変更時のみ入力）' : ''}`,
     h('input', { name: 'token', type: 'password', autocomplete: 'off', placeholder: 'github_pat_…' })),
@@ -115,7 +116,14 @@ export function renderSettings(ctx) {
   return h('div', { class: 'view-settings' },
     h('section', { class: 'settings-block' },
       h('h2', {}, '基本'),
-      num('bodyweight', '体重 kg（自重種目の負荷計算に使用）', 0.1),
+      h('label', { class: 'field' }, '身長 cm',
+        h('input', {
+          type: 'number', inputMode: 'decimal', step: 0.1, value: data.profile?.height ?? '',
+          onchange: (e) => {
+            try { ctx.commit(setHeight(ctx.state.data, e.target.value)); toast('身長を保存しました'); } catch (err) { toast(err.message); }
+          },
+        })),
+      num('bodyweight', '体重 kg（体重タブに記録が無い日の自重計算に使用）', 0.1),
       num('weightStep', '重量ボタンの刻み kg', 0.5)),
     gymBlock, syncForm, customBlock, backup);
 }

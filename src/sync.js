@@ -11,6 +11,15 @@ const b64encode = (str) => {
 };
 const b64decode = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), (c) => c.charCodeAt(0)));
 
+export const DEFAULT_OWNER = 'Reikato0915';
+
+/** 「training-data」「owner/name」「GitHub の URL」のどれでも owner/name に揃える */
+export function normalizeRepo(input) {
+  const v = String(input ?? '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$/i, '').replace(/\/+$/, '');
+  if (!v) return '';
+  return v.includes('/') ? v.split('/').slice(0, 2).join('/') : `${DEFAULT_OWNER}/${v}`;
+}
+
 export const isConfigured = (settings) => Boolean(settings.token && /^[\w.-]+\/[\w.-]+$/.test(settings.repo) && settings.path);
 
 function headers(settings, accept = 'application/vnd.github+json') {

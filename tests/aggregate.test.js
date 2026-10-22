@@ -76,6 +76,11 @@ describe('weeklyMuscleStats', () => {
     expect(stats['2026-10-19']).toEqual({});
   });
 
+  it('accepts bodyweight as a function of date', () => {
+    const stats = weeklyMuscleStats([session('2026-10-19', [{ exId: 'chinning', sets: [{ w: 0, reps: 10 }] }])], [], (d) => (d === '2026-10-19' ? 80 : 0));
+    expect(stats['2026-10-19'].lat_upper.volume).toBe(800);
+  });
+
   it('uses custom exercises', () => {
     const custom = [{ id: 'c1', name: 'x', split: 'pull', primary: ['biceps'], secondary: [], bodyweight: false }];
     const stats = weeklyMuscleStats([session('2026-10-19', [{ exId: 'c1', sets: [{ w: 20, reps: 10 }] }])], custom);

@@ -7,6 +7,9 @@ import {
   newSession, sessionForDate, upsertSession, deleteSession, activeCustom, addCustomExercise, gymOptions, addGym,
 } from '../store.js';
 import { h, fmtKg, fmtDate, toast } from './dom.js';
+import { weightAt } from '../bodyweight.js';
+import { isConfigured } from '../sync.js';
+import { renderCalendar } from './calendar.js';
 
 const CHIP_COUNT = 8;
 const NEW_EXERCISE = '__new__';
@@ -71,7 +74,11 @@ export function renderLog(ctx) {
 
   const cards = session.exercises.map((entry, idx) => renderCard(ctx, entry, idx, { custom, date, updateEntry, save, current }));
 
-  const picker = renderPicker(ctx, session.split, custom, addExercise);
+  // 記録がある日は記録を主役にし、種目追加はボタン1つに畳む
+  const collapsed = session.exercises.length > 0 && !ctx.state.pickerOpen;
+  const picker = collapsed
+    ? h('button', { class: 'add-exercise', onclick: () => ctx.setPickerOpen(true) }, '＋ 種目を追加')
+    : renderPicker(ctx, session.split, custom, addExercise);
 
   const footer = existing
     ? h('button', {
@@ -81,7 +88,17 @@ export function renderLog(ctx) {
     }, 'この日の記録を削除')
     : null;
 
-  return h('div', { class: 'view-log' }, header, h('div', { class: 'cards' }, cards), picker, footer);
+  return h('div', { class: 'view-log' }, renderSyncBanner(ctx), header, h('div', { class: 'cards' }, cards), picker,
+    renderCalendar(ctx), footer);
+}
+
+function renderSyncBanner(ctx) {
+  const { settings, sync, syncError } = ctx.state;
+  if (isConfigured(settings) && sync !== 'error') return null;
+  const msg = isConfigured(settings)
+    ? `同期エラー：${syncError}`
+    : '同期が未設定です。設定でトークンを入れると、過去の記録もこの端末に読み込まれます。';
+  return h('button', { class: 'sync-banner', onclick: () => ctx.setView('settings') }, msg, h('b', {}, ' 設定を開く ›'));
 }
 
 function renderGymSelect(ctx, session, save, current) {
@@ -112,7 +129,7 @@ function renderGymSelect(ctx, session, save, current) {
 
 function renderCard(ctx, entry, idx, { custom, date, updateEntry, save, current }) {
   const def = findExercise(entry.exId, custom);
-  const bw = ctx.state.settings.bodyweight;
+  const bw = weightAt(ctx.state.data, date, ctx.state.settings.bodyweight);
   const totals = exerciseTotals(entry, custom, bw);
   const totalEl = h('span', { class: 'ex-total' }, `${totals.sets} set · ${fmtKg(totals.volume)}`);
   const refreshTotals = () => {

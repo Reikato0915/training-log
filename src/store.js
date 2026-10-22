@@ -3,14 +3,14 @@
 const DATA_KEY = 'tlog.data.v1';
 const SETTINGS_KEY = 'tlog.settings.v1';
 
-export const emptyData = () => ({ version: 1, sessions: [], customExercises: [], gyms: [] });
+export const emptyData = () => ({ version: 1, sessions: [], customExercises: [], gyms: [], bodyweights: [], profile: {} });
 
 export const DEFAULT_GYMS = Object.freeze(['パワーハウスジム大阪', 'パワーハウスジムノース大阪', 'ゴールドジム京都烏丸']);
 export const DEFAULT_GYM = DEFAULT_GYMS[0];
 
 export const DEFAULT_SETTINGS = Object.freeze({
   bodyweight: 75,
-  repo: '',
+  repo: 'Reikato0915/training-data',
   path: 'training.json',
   token: '',
   weightStep: 2.5,
@@ -36,7 +36,10 @@ function writeJSON(key, value) {
 
 export const loadData = () => ({ ...emptyData(), ...readJSON(DATA_KEY, {}) });
 export const saveData = (data) => writeJSON(DATA_KEY, data);
-export const loadSettings = () => ({ ...DEFAULT_SETTINGS, ...readJSON(SETTINGS_KEY, {}) });
+export function loadSettings() {
+  const stored = readJSON(SETTINGS_KEY, {});
+  return { ...DEFAULT_SETTINGS, ...stored, repo: stored.repo || DEFAULT_SETTINGS.repo };
+}
 export const saveSettings = (s) => writeJSON(SETTINGS_KEY, s);
 
 export const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -101,6 +104,8 @@ function mergeById(a = [], b = []) {
   return [...map.values()];
 }
 
+const newer = (a = {}, b = {}) => ((b.updatedAt ?? '') > (a.updatedAt ?? '') ? b : a);
+
 export function mergeData(local, remote) {
   if (!remote) return local;
   return {
@@ -108,6 +113,8 @@ export function mergeData(local, remote) {
     sessions: mergeById(local.sessions, remote.sessions).sort((x, y) => x.date.localeCompare(y.date)),
     customExercises: mergeById(local.customExercises, remote.customExercises),
     gyms: mergeById(local.gyms, remote.gyms),
+    bodyweights: mergeById(local.bodyweights, remote.bodyweights).sort((x, y) => x.date.localeCompare(y.date)),
+    profile: newer(local.profile, remote.profile),
   };
 }
 
@@ -120,5 +127,12 @@ export function validateData(obj) {
       throw new Error(`不正なセッション: ${JSON.stringify(s).slice(0, 80)}`);
     }
   }
-  return { version: 1, sessions: obj.sessions, customExercises: obj.customExercises ?? [], gyms: obj.gyms ?? [] };
+  return {
+    version: 1,
+    sessions: obj.sessions,
+    customExercises: obj.customExercises ?? [],
+    gyms: obj.gyms ?? [],
+    bodyweights: Array.isArray(obj.bodyweights) ? obj.bodyweights : [],
+    profile: obj.profile ?? {},
+  };
 }

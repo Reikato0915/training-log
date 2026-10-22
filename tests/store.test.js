@@ -52,7 +52,7 @@ describe('validateData', () => {
   });
 
   it('fills defaults', () => {
-    expect(validateData({ sessions: [] })).toEqual({ version: 1, sessions: [], customExercises: [], gyms: [] });
+    expect(validateData({ sessions: [] })).toEqual({ version: 1, sessions: [], customExercises: [], gyms: [], bodyweights: [], profile: {} });
   });
 });
 
