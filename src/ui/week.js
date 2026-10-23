@@ -4,6 +4,7 @@ import { weeklyMuscleStats, weekStart, recentWeeks, weekDelta, weeklyE1RM, addDa
 import { activeCustom } from '../store.js';
 import { weightAt } from '../bodyweight.js';
 import { h, svg, fmtKg, fmtSets, fmtDate, toast } from './dom.js';
+import { renderProgressPanel } from './progress-panel.js';
 
 const TREND_WEEKS = 8;
 const REGIONS = [['push', 'PUSH'], ['pull', 'PULL'], ['legs', 'LEGS・体幹']];
@@ -106,7 +107,7 @@ export function renderWeek(ctx) {
     },
   }, 'Obsidian 用 Markdown を共有');
 
-  return h('div', { class: 'view-week' }, head, regionBlocks,
+  return h('div', { class: 'view-week' }, head, renderProgressPanel(ctx), regionBlocks,
     h('section', { class: 'region e1rm' },
       h('h2', {}, '推定1RM（Epley）前回比'),
       e1rmRows.length ? h('ul', { class: 'e1rm-list' }, e1rmRows) : h('p', { class: 'muted' }, '1〜12rep のセットがあると表示されます')),

@@ -93,7 +93,7 @@ export function lastPerformance(sessions, exId, beforeDate) {
   const hit = [...sessions]
     .filter((s) => !s.deleted && s.date < beforeDate)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .flatMap((s) => s.exercises.filter((e) => e.exId === exId).map((e) => ({ date: s.date, sets: e.sets, unit: e.unit })))
+    .flatMap((s) => s.exercises.filter((e) => e.exId === exId).map((e) => ({ date: s.date, sets: e.sets, unit: e.unit, sided: e.sided })))
     .at(0);
   return hit ?? null;
 }
@@ -127,6 +127,7 @@ export function lastSessionOfSplit(sessions, split, beforeDate) {
 export const copyExercises = (session) => session.exercises.map((e) => ({
   exId: e.exId,
   ...(e.unit ? { unit: e.unit } : {}),
+  ...(e.sided != null ? { sided: e.sided } : {}),
   memo: '',
   sets: e.sets.map((s) => ({ ...s })),
 }));
